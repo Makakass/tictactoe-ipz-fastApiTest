@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}
+<title>
+    Хрестики Нолики
+</title>
+{% endblock %}
+
+{% block main %}
+<h3>WebSocket Tic Tac Toe</h3>
+<h4>Current player: <span id="current-player"></span></h4>
+You play by: <span id="player"></span><br>
+Info: <span id="info"></span>
+<div class="w-10">
+    <table id="board" class="table table-bordered border-primary table-nonfluid mt-3">
+        <tr>
+            <td class="tic-box" id="1" onclick="cellClick(1)">*</td>
+            <td class="tic-box" id="2" onclick="cellClick(2)">*</td>
+            <td class="tic-box" id="3" onclick="cellClick(3)">*</td>
+        </tr>
+        <tr>
+            <td class="tic-box" id="4" onclick="cellClick(4)">*</td>
+            <td class="tic-box" id="5" onclick="cellClick(5)">*</td>
+            <td class="tic-box" id="6" onclick="cellClick(6)">*</td>
+        </tr>
+        <tr>
+            <td class="tic-box" id="7" onclick="cellClick(7)">*</td>
+            <td class="tic-box" id="8" onclick="cellClick(8)">*</td>
+            <td class="tic-box" id="9" onclick="cellClick(9)">*</td>
+        </tr>
+    </table>
+</div>
+<a class="btn btn-primary" href="javascript:location.reload(true)" role="button">Грати знову</a>
+{% endblock %}
+
+{% block script %}
+<script>
+    var ws = new WebSocket("ws://localhost:8000/ws{{ data }}");
+    let player = null
+    let currentPlayer = null
+    let gameOver = false
+    let currentPlyerDisplay = document.getElementById('current-player')
+    let infoDisplay = document.getElementById('info')
+    let infoPlayer = document.getElementById('player')
+    swaper = {
+        "X": "O",
+        "O": "X"
+    }
+    let checks = [
+            [0,1,2],
+            [3,4,5],
+            [6,7,8],
+            [0,3,6],
+            [1,4,7],
+            [2,5,8],
+            [0,4,8],
+            [6,4,2],
+        ]
+    function highlightAll() {
+        for (let c=1; c<=10; c++) {
+            document.getElementById(c).style.backgroundColor = 'gray';
+        }
+    }
+    function hightLightRow() {
+        let cells = []
+        for (let c=1; c<=10; c++) {
+            cells.push(document.getElementById(c))
+        }
+        checks.forEach((row) => {
+            console.log(row);
+            if (cells[row[0]].innerHTML == cells[row[1]].innerHTML && cells[row[0]].innerHTML == cells[row[2]].innerHTML && cells[row[0]].innerHTML != "*") {
+                console.log(cells[row[0]].innerHTML, cells[row[1]].innerHTML, cells[row[2]].innerHTML);
+                cells[row[0]].style.backgroundColor = '#eca1a6';
+                cells[row[1]].style.backgroundColor = '#eca1a6';
+                cells[row[2]].style.backgroundColor = '#eca1a6';
+            return
+            }
+        });
+    }
+    function toggleplayer() {
+        currentPlayer = swaper[currentPlayer]
+        console.log("Toggler ", player, currentPlayer);
+        if (player == currentPlayer) {
+            infoDisplay.innerHTML = "Your turn!"
+            currentPlyerDisplay.innerHTML = player
+        } else {
+            infoDisplay.innerHTML = "Your opponent's turn!"
+            currentPlyerDisplay.innerHTML = swaper[player]
+        }
+    }
+
+    function checkCell(cell) {
+        if (cell.innerHTML == '*' & player == currentPlayer) {
+            return true
+        }
+        return false
+    }
+    function updateCell(id, sign) {
+        cell = document.getElementById(id)
+        cell.innerHTML = sign
+    }
+    function updateInfo(message) {
+        infoDisplay.innerHTML = message
+    }
+    function cellClick(id) {
+        if (gameOver) {
+            return
+        }
+        cell = document.getElementById(id)
+        if (checkCell(cell)) {
+            ws.send(JSON.stringify({player: player, cell: id }))
+        } else {
+            infoDisplay.innerHTML = "Choose another cell! Or wait for your turn!"
+        }
+    }
+
+    ws.onmessage = function(e) {
+        response = JSON.parse(e.data)
+        console.log("On message",response);
+        if (response.init) {
+            infoDisplay.innerHTML = "You play by: "+ response.player + ". " + response.message
+            infoPlayer.innerHTML = response.player
+            if (response.message != "Waiting for another player") {
+                player = response.player
+            }
+            currentPlayer = "X"
+            currentPlyerDisplay.innerHTML = "X"
+        } else {
+            if (response.message == 'move') {
+                updateCell(response.cell, response.player)
+                toggleplayer()
+            } else if (response.message == 'disconnected') {
+                updateInfo("Opponent disconnected")
+                ws.close(1000)
+            } else if (response.message == 'draw') {
+                updateInfo("It's a draw")
+                updateCell(response.cell, response.player)
+                highlightAll()
+                ws.close(1000)
+            } else if (response.message == 'won') {
+                updateInfo("Player " + response.player + " won!")
+                updateCell(response.cell, response.player)
+                hightLightRow()
+                ws.close(1000)
+            } else if (response.player == player & response.message == 'choose another one') {
+                updateInfo("Cell is not available")
+            } else {
+                console.log(response);
+            }
+        }
+    }
+    ws.onclose = function(e) {
+        if (e.code == 4000) {
+            infoDisplay.innerHTML = "No more places!!"
+        } else if (e.code != 1000){
+            infoDisplay.innerHTML = "Error"
+        }
+        gameOver = true
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}
+<title>
+    Кімнати
+</title>
+{% endblock %}
+
+{% block main %}
+<h1 class="h3 my-5 fw-normal">Кімнати</h1>
+<ul class="list-group mb-3">
+    {% for room in data %}
+    <a class="list-group-item d-flex justify-content-between lh-sm" href="/rooms/{{ room.id }}">
+        <div>
+            <h6 class="my-0">{{ room.name }}</h6>
+            <small class="text-muted">Кімната Хрестики Нолики</small>
+        </div>
+        <span class="text-muted">#{{ room.id }}</span>
+    </a>
+    {% endfor %}
+</ul>
+{% endblock %}
