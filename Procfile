@@ -1,1 +1,1 @@
-web: gunicorn -w 1 -k uvicorn.workers.UvicornWorker main:app
+web: gunicorn -c gun.py -w 1 -k uvicorn.workers.UvicornWorker main:app

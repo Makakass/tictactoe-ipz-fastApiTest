@@ -35,7 +35,7 @@ Info: <span id="info"></span>
 
 {% block script %}
 <script>
-    var ws = new WebSocket("ws://{{ ip }}:13001/ws{{ data }}");
+    var ws = new WebSocket("ws://{{ ip }}:8000/ws{{ data }}");
     let player = null
     let currentPlayer = null
     let gameOver = false
