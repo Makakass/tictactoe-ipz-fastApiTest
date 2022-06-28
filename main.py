@@ -4,6 +4,7 @@ from fastapi.templating import Jinja2Templates
 import json
 import time
 import logging
+import urllib.request
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
@@ -78,7 +79,8 @@ async def get_rooms(request: Request):
 async def get_room(request: Request, room_id: str):
     for room in rooms_list:
         if room.room_id == room_id:
-            return templates.TemplateResponse("room.html", {"request": request, "data": room_id})
+            external_ip = urllib.request.urlopen('https://ident.me').read().decode('utf8')
+            return templates.TemplateResponse("room.html", {"request": request, "data": room_id, "ip": external_ip})
     logging.info('GET to a non-existent room')
     return 'Room does not exist!'
 
